@@ -1,0 +1,21 @@
+# .NET
+bin/
+obj/
+*.user
+
+# Local SQLite dev database
+*.db
+*.db-shm
+*.db-wal
+
+# Node / Vite
+web/node_modules/
+web/dist/
+
+# Secrets / local config
+appsettings.*.local.json
+.env.local
+
+# IDE
+.vs/
+.idea/
