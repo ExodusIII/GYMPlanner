@@ -32,6 +32,16 @@ export default function App() {
     void refreshSaved();
   }, [email, refreshSaved]);
 
+  // The API clears the token and fires this when an authenticated request gets a 401.
+  useEffect(() => {
+    function onExpired() {
+      setEmail(null);
+      setError('Your session expired — please log in again.');
+    }
+    window.addEventListener('auth-expired', onExpired);
+    return () => window.removeEventListener('auth-expired', onExpired);
+  }, []);
+
   async function calculate(p: ClientProfile) {
     setError(null);
     setProgram(null);

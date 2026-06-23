@@ -23,6 +23,15 @@ export const auth = {
   },
 };
 
+export class ApiError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers(options.headers);
   headers.set('Content-Type', 'application/json');
@@ -40,7 +49,14 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       const text = await res.text().catch(() => '');
       if (text) message = text;
     }
-    throw new Error(message);
+    // A 401 on a request that carried a token means the saved session is
+    // stale/expired — clear it and let the app prompt a fresh login.
+    if (res.status === 401 && token) {
+      auth.clear();
+      window.dispatchEvent(new Event('auth-expired'));
+      message = 'Your session expired — please log in again.';
+    }
+    throw new ApiError(message, res.status);
   }
 
   return res.status === 204 ? (undefined as T) : ((await res.json()) as T);
