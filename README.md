@@ -93,8 +93,14 @@ dotnet run --project src/GYMPlanner.Api
 
 ## Enable AI program generation (V2)
 
-`POST /api/programs` calls the Claude API from the backend. Provide an API key
-(the key never reaches the browser):
+`POST /api/programs` generates the weekly plan. The generator is pluggable via
+`ProgramGenerator:Provider` — **`Claude`** (default, paid API) or **`Ollama`**
+(free, runs locally). Either way the V1 calculator + accounts work without it;
+if generation isn't configured the endpoint returns a clear 503.
+
+### Option A — Claude (paid, best quality)
+
+Provide a key (it never reaches the browser):
 
 ```bash
 # PowerShell
@@ -102,11 +108,37 @@ $env:ANTHROPIC_API_KEY = "sk-ant-..."
 dotnet run --project src/GYMPlanner.Api
 ```
 
-Or set `Claude:ApiKey` in `appsettings.json`. The model defaults to
-`claude-opus-4-8`; change `Claude:Model` to `claude-sonnet-4-6` /
-`claude-haiku-4-5` to trade quality for cost. Without a key the endpoint returns
-503 with a clear message — the rest of the app (the V1 calculator + accounts)
-works regardless.
+Or set `Claude:ApiKey` in `appsettings.json`. Model defaults to
+`claude-opus-4-8`; set `Claude:Model` to `claude-sonnet-4-6` / `claude-haiku-4-5`
+to cut cost.
+
+### Option B — Ollama (free, local, no API key)
+
+Run a model on your machine with [Ollama](https://ollama.com); the backend calls
+it instead of Claude.
+
+**Recommended — host Ollama** (install [Ollama for Windows](https://ollama.com),
+which is GPU-accelerated and avoids a large Docker image pull):
+
+```bash
+ollama pull llama3.2
+dotnet user-secrets --project src/GYMPlanner.Api set "ProgramGenerator:Provider" "Ollama"
+dotnet run --project src/GYMPlanner.Api
+```
+
+**Fully in Docker** — the `ollama` service is opt-in (the image is large), enabled
+with the `ollama` profile:
+
+```bash
+# PowerShell
+$env:PROGRAM_GENERATOR = "Ollama"
+docker compose --profile ollama up -d --build
+docker compose exec ollama ollama pull llama3.2   # one-time (~2 GB)
+```
+
+Defaults: `Ollama:Model` = `llama3.2`, `Ollama:BaseUrl` = `http://localhost:11434`
+(the Docker API uses `http://ollama:11434`). Pick a smaller model
+(`OLLAMA_MODEL=qwen2.5:0.5b`) for speed or a larger one for quality.
 
 ## Run the frontend
 

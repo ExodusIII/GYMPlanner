@@ -27,12 +27,28 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__Default: "Host=db;Port=5432;Database=gymplanner;Username=postgres;Password=postgres"
+      # AI program generator: "Claude" (paid API) or "Ollama" (free, local).
+      ProgramGenerator__Provider: ${PROGRAM_GENERATOR:-Claude}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      Ollama__BaseUrl: http://ollama:11434
+      Ollama__Model: ${OLLAMA_MODEL:-llama3.2}
     ports:
       - "5030:8080"
     depends_on:
       db:
         condition: service_healthy
+
+  # Optional, free local LLM. Not started by default (the image is large).
+  # Enable with:  docker compose --profile ollama up -d
+  # Tip: running Ollama natively on the host is faster (GPU) — see README.
+  ollama:
+    image: ollama/ollama
+    profiles: ["ollama"]
+    volumes:
+      - ollamadata:/root/.ollama
+    ports:
+      - "11434:11434"
+    restart: unless-stopped
 
   web:
     build:
@@ -46,3 +62,4 @@ services:
 
 volumes:
   pgdata:
+  ollamadata:
