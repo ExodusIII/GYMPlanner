@@ -34,6 +34,10 @@ services:
       # service (--profile ollama) set OLLAMA_BASEURL=http://ollama:11434.
       Ollama__BaseUrl: ${OLLAMA_BASEURL:-http://host.docker.internal:11434}
       Ollama__Model: ${OLLAMA_MODEL:-llama3.2}
+      # OpenAI-compatible provider (Gemini default; also Groq/OpenRouter).
+      OpenAi__ApiKey: ${GEMINI_API_KEY:-}
+      OpenAi__BaseUrl: ${OPENAI_BASEURL:-https://generativelanguage.googleapis.com/v1beta/openai}
+      OpenAi__Model: ${OPENAI_MODEL:-gemini-2.0-flash}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:

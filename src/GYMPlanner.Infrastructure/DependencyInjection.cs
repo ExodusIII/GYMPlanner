@@ -23,14 +23,21 @@ public static class DependencyInjection
 
         services.AddScoped<IProgramRepository, ProgramRepository>();
 
-        // Choose the AI program generator: "Claude" (default, paid API) or
-        // "Ollama" (free, local). Set ProgramGenerator:Provider in config/env.
+        // Choose the AI program generator via ProgramGenerator:Provider:
+        //   "Claude"  – paid Anthropic API (default)
+        //   "Ollama"  – free, local
+        //   "Gemini" / "Groq" / "OpenRouter" / "OpenAI" – any OpenAI-compatible API
         services.Configure<ClaudeOptions>(configuration.GetSection("Claude"));
         services.Configure<OllamaOptions>(configuration.GetSection("Ollama"));
+        services.Configure<OpenAiOptions>(configuration.GetSection("OpenAi"));
 
         var provider = configuration["ProgramGenerator:Provider"];
+        string[] openAiCompatible = ["OpenAI", "Gemini", "Groq", "OpenRouter"];
+
         if (string.Equals(provider, "Ollama", StringComparison.OrdinalIgnoreCase))
             services.AddHttpClient<IProgramGenerator, OllamaProgramGenerator>(c => c.Timeout = TimeSpan.FromMinutes(10));
+        else if (provider is not null && openAiCompatible.Contains(provider, StringComparer.OrdinalIgnoreCase))
+            services.AddHttpClient<IProgramGenerator, OpenAiCompatibleProgramGenerator>(c => c.Timeout = TimeSpan.FromMinutes(5));
         else
             services.AddScoped<IProgramGenerator, ClaudeProgramGenerator>();
 

@@ -112,7 +112,33 @@ Or set `Claude:ApiKey` in `appsettings.json`. Model defaults to
 `claude-opus-4-8`; set `Claude:Model` to `claude-sonnet-4-6` / `claude-haiku-4-5`
 to cut cost.
 
-### Option B — Ollama (free, local, no API key)
+### Option B — Google Gemini (free cloud, recommended free)
+
+The best free option for quality: a Google Gemini API key has a generous free tier
+and needs no local hardware. Get a key (free) at <https://aistudio.google.com>.
+
+**Docker:**
+
+```powershell
+$env:PROGRAM_GENERATOR = "Gemini"
+$env:GEMINI_API_KEY = "your-key"
+docker compose up -d
+```
+
+**Local (no Docker):**
+
+```powershell
+dotnet user-secrets --project src/GYMPlanner.Api set "ProgramGenerator:Provider" "Gemini"
+dotnet user-secrets --project src/GYMPlanner.Api set "OpenAi:ApiKey" "your-key"
+dotnet run --project src/GYMPlanner.Api
+```
+
+Model defaults to `gemini-2.0-flash`. The same OpenAI-compatible generator also
+works with **Groq** (set provider `Groq`, `OPENAI_BASEURL=https://api.groq.com/openai/v1`,
+`OPENAI_MODEL=llama-3.3-70b-versatile`) or **OpenRouter** — only the base URL,
+model, and key change.
+
+### Option C — Ollama (free, local, no API key)
 
 Install [Ollama for Windows](https://ollama.com) (GPU-accelerated) and pull a model.
 The backend then calls Ollama instead of Claude.
