@@ -24,6 +24,31 @@ tests/
 - **Auth:** ASP.NET Core Identity + JWT bearer tokens (shared by web and a future mobile app).
 - **Database:** **PostgreSQL** (EF Core via Npgsql).
 
+## Run with Docker (recommended)
+
+The whole stack — PostgreSQL, the API, and the React app — runs with one command.
+Only Docker is required (no .NET/Node install needed).
+
+```bash
+docker compose up --build
+```
+
+- web → **http://localhost:5173**
+- api → **http://localhost:5030** (interactive reference at `/scalar/v1`)
+- db → PostgreSQL on host port `5433` (data persists in the `pgdata` volume)
+
+The API applies its EF migration automatically on startup. To enable AI program
+generation, export `ANTHROPIC_API_KEY` before bringing the stack up:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...   # PowerShell: $env:ANTHROPIC_API_KEY="sk-ant-..."
+docker compose up --build
+```
+
+Stop with `docker compose down` (add `-v` to also drop the database volume).
+
+## Run locally without Docker
+
 ## Prerequisites
 
 - .NET 10 SDK, Node 20+, the EF tools (`dotnet tool install --global dotnet-ef`),

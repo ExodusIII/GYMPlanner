@@ -1,0 +1,20 @@
+# Build outputs
+**/bin/
+**/obj/
+**/dist/
+
+# Node
+**/node_modules/
+
+# Local dev DB / secrets
+*.db
+*.db-shm
+*.db-wal
+**/appsettings.*.local.json
+
+# Git / IDE / docs
+.git/
+.gitignore
+.vs/
+.idea/
+**/*.user

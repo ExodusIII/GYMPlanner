@@ -18,7 +18,8 @@ public static class DependencyInjection
     {
         var connectionString = configuration.GetConnectionString("Default")
             ?? throw new InvalidOperationException("Missing connection string 'Default' (PostgreSQL).");
-        services.AddDbContext<AppDbContext>(o => o.UseNpgsql(connectionString));
+        services.AddDbContext<AppDbContext>(o =>
+            o.UseNpgsql(connectionString, npgsql => npgsql.EnableRetryOnFailure()));
 
         services.AddScoped<IProgramRepository, ProgramRepository>();
 

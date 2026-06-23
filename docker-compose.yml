@@ -1,0 +1,48 @@
+# Full stack: PostgreSQL + .NET API + React (nginx).
+#   docker compose up --build
+#   web → http://localhost:5173   api → http://localhost:5030 (/scalar/v1)
+# Optional AI: set ANTHROPIC_API_KEY in your shell before `up` to enable /api/programs.
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: gymplanner
+    ports:
+      - "5433:5432" # host access for tooling / local `dotnet run`
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d gymplanner"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build:
+      context: .
+      dockerfile: src/GYMPlanner.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Default: "Host=db;Port=5432;Database=gymplanner;Username=postgres;Password=postgres"
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    ports:
+      - "5030:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./web
+      args:
+        VITE_API_URL: http://localhost:5030
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
