@@ -114,31 +114,44 @@ to cut cost.
 
 ### Option B — Ollama (free, local, no API key)
 
-Run a model on your machine with [Ollama](https://ollama.com); the backend calls
-it instead of Claude.
-
-**Recommended — host Ollama** (install [Ollama for Windows](https://ollama.com),
-which is GPU-accelerated and avoids a large Docker image pull):
+Install [Ollama for Windows](https://ollama.com) (GPU-accelerated) and pull a model.
+The backend then calls Ollama instead of Claude.
 
 ```bash
-ollama pull llama3.2
+ollama pull llama3.2          # 3B, fast. For better quality: qwen2.5:7b / llama3.1:8b
+```
+
+> The provider is chosen by `ProgramGenerator:Provider`. **In Docker this must be an
+> environment variable** (`PROGRAM_GENERATOR`), not a user-secret — user-secrets are
+> only read by `dotnet run` on the host, never inside the container.
+
+**Docker stack + host Ollama** (the running API reaches host Ollama via
+`host.docker.internal`, configured in the compose file):
+
+```powershell
+$env:PROGRAM_GENERATOR = "Ollama"
+# $env:OLLAMA_MODEL = "qwen2.5:7b"   # optional, better quality than the 3B default
+docker compose up -d
+```
+
+**Local API (no Docker) + host Ollama:**
+
+```bash
 dotnet user-secrets --project src/GYMPlanner.Api set "ProgramGenerator:Provider" "Ollama"
 dotnet run --project src/GYMPlanner.Api
 ```
 
-**Fully in Docker** — the `ollama` service is opt-in (the image is large), enabled
-with the `ollama` profile:
+**Fully in Docker** (Ollama in a container too — opt-in, large image):
 
-```bash
-# PowerShell
-$env:PROGRAM_GENERATOR = "Ollama"
-docker compose --profile ollama up -d --build
+```powershell
+$env:PROGRAM_GENERATOR = "Ollama"; $env:OLLAMA_BASEURL = "http://ollama:11434"
+docker compose --profile ollama up -d
 docker compose exec ollama ollama pull llama3.2   # one-time (~2 GB)
 ```
 
-Defaults: `Ollama:Model` = `llama3.2`, `Ollama:BaseUrl` = `http://localhost:11434`
-(the Docker API uses `http://ollama:11434`). Pick a smaller model
-(`OLLAMA_MODEL=qwen2.5:0.5b`) for speed or a larger one for quality.
+Defaults: `Ollama:Model` = `llama3.2`, and the Docker API's `Ollama:BaseUrl`
+defaults to `http://host.docker.internal:11434`. A small 3B model produces
+schema-valid but weak content — use a 7B+ model for usable programs.
 
 ## Run the frontend
 
