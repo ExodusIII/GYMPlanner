@@ -12,39 +12,43 @@ internal static class ProgramPrompt
 {
     public const string System = """
         You are an expert strength-and-conditioning coach and registered dietitian.
-        You write safe, practical weekly training and nutrition programs.
+        You output a structured weekly program as JSON. Be concrete, consistent, and complete.
 
-        Rules:
-        - Treat the provided computed numbers as ground truth. The nutrition section MUST copy the
-          given calorie target and protein/carb/fat grams exactly.
-        - Produce exactly the number of training days the client can train, using the recommended split.
-        - Respect the client's available equipment, experience level, and any injuries
-          (avoid contraindicated movements for the listed injuries).
-        - Keep exercise selection realistic and progressively sensible.
+        Hard requirements (every time):
+        - The "days" array MUST contain EXACTLY the requested number of training days — no more, no fewer.
+        - Each day: a short "focus" label (e.g. "Upper Body", "Lower Body", "Push", "Pull", "Legs",
+          "Full Body") consistent with the requested split, and 4 to 6 exercises.
+        - Each exercise: a real exercise "name"; "sets" as an integer from 3 to 5; "reps" as a RANGE
+          string such as "8-12" or "10-15" (NEVER a single letter, a number alone, or empty); and a
+          short practical "notes" tip (max ~12 words, never empty).
+        - The nutrition section MUST copy the provided calorie and macro numbers EXACTLY, and include
+          4 to 6 concrete "mealSuggestions" (real meals, not placeholders).
+        - "notes": one or two sentences of overall guidance.
+        - Respect the client's equipment, experience, and injuries (avoid contraindicated movements).
         - This is general fitness guidance, not medical advice.
-        Return only data that conforms to the provided JSON schema.
+        Never output placeholder, empty, or single-character values. Conform exactly to the JSON schema.
         """;
 
     public static string BuildUserMessage(ClientProfile profile, CalculatedMetrics metrics)
     {
         var profileJson = JsonSerializer.Serialize(profile, AppJson.Options);
-        var metricsJson = JsonSerializer.Serialize(metrics, AppJson.Options);
+        var injuries = profile.Injuries.Count > 0 ? string.Join(", ", profile.Injuries) : "none";
 
         return $"""
-            Create a weekly fitness and nutrition program for this client.
+            Create a {profile.DaysPerWeek}-day weekly training and nutrition program for this client.
+            Return EXACTLY {profile.DaysPerWeek} entries in the "days" array — one per training day.
 
-            CLIENT PROFILE:
+            Split: "{metrics.Training.Split}" — distribute the focus across the {profile.DaysPerWeek} days accordingly.
+            Target ~{metrics.Training.WeeklySetsPerMuscleGroup} working sets per major muscle group per week.
+            Session length: ~{profile.MinutesPerSession} minutes. Equipment: "{profile.Equipment}".
+            Experience: "{profile.Experience}". Injuries to work around: {injuries}.
+
+            Nutrition — copy these numbers EXACTLY:
+            dailyCalories={metrics.CalorieTarget}, proteinGrams={metrics.Macros.ProteinGrams},
+            carbGrams={metrics.Macros.CarbGrams}, fatGrams={metrics.Macros.FatGrams}.
+
+            CLIENT PROFILE (JSON):
             {profileJson}
-
-            COMPUTED TARGETS (ground truth — copy the nutrition numbers exactly):
-            {metricsJson}
-
-            Build {profile.DaysPerWeek} training day(s) using the "{metrics.Training.Split}" split,
-            roughly {metrics.Training.WeeklySetsPerMuscleGroup} weekly working sets per major muscle group,
-            each session about {profile.MinutesPerSession} minutes, for "{profile.Equipment}" equipment access.
-            The nutrition section must use dailyCalories={metrics.CalorieTarget},
-            proteinGrams={metrics.Macros.ProteinGrams}, carbGrams={metrics.Macros.CarbGrams},
-            fatGrams={metrics.Macros.FatGrams}.
             """;
     }
 
