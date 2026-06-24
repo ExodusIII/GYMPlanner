@@ -133,10 +133,24 @@ dotnet user-secrets --project src/GYMPlanner.Api set "OpenAi:ApiKey" "your-key"
 dotnet run --project src/GYMPlanner.Api
 ```
 
-Model defaults to `gemini-2.0-flash`. The same OpenAI-compatible generator also
-works with **Groq** (set provider `Groq`, `OPENAI_BASEURL=https://api.groq.com/openai/v1`,
-`OPENAI_MODEL=llama-3.3-70b-versatile`) or **OpenRouter** — only the base URL,
-model, and key change.
+Model defaults to `gemini-2.0-flash`.
+
+> **Gemini free tier is region/project dependent.** If generation returns
+> `429 … free_tier_requests, limit: 0`, your project has no free Gemini quota
+> (common in some countries) — enable billing on the project, or use Groq below.
+
+**Groq** (free tier that works in most regions; get a key at <https://console.groq.com>).
+The same generator powers it — just edit `.env`:
+
+```
+PROGRAM_GENERATOR=Groq
+AI_API_KEY=gsk_your_groq_key
+OPENAI_BASEURL=https://api.groq.com/openai/v1
+OPENAI_MODEL=llama-3.3-70b-versatile
+```
+
+(`AI_API_KEY` is the provider-agnostic key slot; `GEMINI_API_KEY` also works.)
+**OpenRouter** works the same way — only the base URL, model, and key change.
 
 ### Option C — Ollama (free, local, no API key)
 
