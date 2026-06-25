@@ -1,19 +1,24 @@
 using System.Net.Http.Headers;
-using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using GYMPlanner.Application.Programs;
 using GYMPlanner.Domain;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace GYMPlanner.Infrastructure.Ai;
 
 /// <summary>
 /// Generates the weekly program via any OpenAI-compatible chat-completions API
-/// (Google Gemini, Groq, OpenRouter, …). Uses the same grounded prompt and
-/// constrains output with <c>response_format: json_schema</c> so it deserializes
-/// straight into <see cref="WeeklyProgram"/>. The key stays on the backend.
+/// (Google Gemini, Groq, OpenRouter, …). Uses the same grounded prompt and asks
+/// for a JSON object (<c>response_format: json_object</c>) shaped by the prompt,
+/// then deserializes into <see cref="WeeklyProgram"/>. The key stays on the backend.
+/// The outgoing request and the response are logged (without the API key).
 /// </summary>
-internal sealed class OpenAiCompatibleProgramGenerator(HttpClient http, IOptions<OpenAiOptions> options) : IProgramGenerator
+internal sealed class OpenAiCompatibleProgramGenerator(
+    HttpClient http,
+    IOptions<OpenAiOptions> options,
+    ILogger<OpenAiCompatibleProgramGenerator> logger) : IProgramGenerator
 {
     private readonly OpenAiOptions _options = options.Value;
 
@@ -24,7 +29,7 @@ internal sealed class OpenAiCompatibleProgramGenerator(HttpClient http, IOptions
     {
         if (string.IsNullOrWhiteSpace(_options.ApiKey))
             throw new InvalidOperationException(
-                "AI API key is not configured. Set OpenAi:ApiKey (e.g. a free Gemini key from https://aistudio.google.com).");
+                "AI API key is not configured. Set OpenAi:ApiKey / AI_API_KEY (e.g. a free Groq key from https://console.groq.com).");
 
         var url = _options.BaseUrl.TrimEnd('/') + "/chat/completions";
 
@@ -36,15 +41,17 @@ internal sealed class OpenAiCompatibleProgramGenerator(HttpClient http, IOptions
                 new { role = "system", content = ProgramPrompt.System },
                 new { role = "user", content = ProgramPrompt.BuildUserMessage(profile, metrics) }
             },
-            // json_object is supported across providers (Gemini, Groq, OpenRouter, …);
-            // the exact shape is enforced by the prompt. (json_schema isn't supported
-            // by all Groq models.)
             response_format = new { type = "json_object" }
         };
 
+        var bodyJson = JsonSerializer.Serialize(requestBody, AppJson.Options);
+
+        // Log the exact request we send (the Authorization header / API key is NOT logged).
+        logger.LogInformation("AI request → POST {Url} (model {Model})\n{Body}", url, _options.Model, bodyJson);
+
         using var request = new HttpRequestMessage(HttpMethod.Post, url)
         {
-            Content = JsonContent.Create(requestBody, options: AppJson.Options)
+            Content = new StringContent(bodyJson, Encoding.UTF8, "application/json")
         };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.ApiKey);
 
@@ -58,13 +65,13 @@ internal sealed class OpenAiCompatibleProgramGenerator(HttpClient http, IOptions
             throw new InvalidOperationException($"The AI provider at {_options.BaseUrl} is not reachable.", ex);
         }
 
-        if (!response.IsSuccessStatusCode)
-        {
-            var error = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"AI request failed ({(int)response.StatusCode}): {error}");
-        }
+        var responseText = await response.Content.ReadAsStringAsync(cancellationToken);
+        logger.LogInformation("AI response ← {Status}\n{Body}", (int)response.StatusCode, responseText);
 
-        var completion = await response.Content.ReadFromJsonAsync<ChatCompletion>(AppJson.Options, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException($"AI request failed ({(int)response.StatusCode}): {responseText}");
+
+        var completion = JsonSerializer.Deserialize<ChatCompletion>(responseText, AppJson.Options);
         var content = completion?.Choices is { Count: > 0 } choices ? choices[0].Message?.Content : null;
         if (string.IsNullOrWhiteSpace(content))
             throw new InvalidOperationException("The AI provider returned no program content.");

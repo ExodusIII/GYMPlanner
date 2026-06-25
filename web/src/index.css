@@ -112,8 +112,18 @@ button.link { background: none; color: var(--accent-2); padding: 0; font-weight:
 
 .program .days { display: flex; flex-direction: column; gap: 16px; }
 .program .focus { color: var(--accent); font-weight: 500; }
-.program table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-.program th, .program td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+.program table { width: 100%; border-collapse: collapse; font-size: 0.9rem; table-layout: fixed; }
+.program th, .program td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+/* Fixed widths so every day's table lines up: Exercise | Sets | Reps | Notes */
+.program th:nth-child(1), .program td:nth-child(1) { width: 32%; }
+.program th:nth-child(2), .program td:nth-child(2) { width: 56px; text-align: center; }
+.program th:nth-child(3), .program td:nth-child(3) { width: 80px; text-align: center; }
 .program .nutrition, .program .notes { margin-top: 16px; }
 
 .saved { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
