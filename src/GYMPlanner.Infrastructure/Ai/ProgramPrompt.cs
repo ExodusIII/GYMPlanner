@@ -26,7 +26,10 @@ internal static class ProgramPrompt
         - "notes": one or two sentences of overall guidance.
         - Respect the client's equipment, experience, and injuries (avoid contraindicated movements).
         - This is general fitness guidance, not medical advice.
-        Never output placeholder, empty, or single-character values. Conform exactly to the JSON schema.
+        Never output placeholder, empty, or single-character values.
+
+        Respond with a SINGLE JSON object using EXACTLY these camelCase keys and no others:
+        {"days":[{"day":"Day 1","focus":"Upper Body","exercises":[{"name":"Bench Press","sets":4,"reps":"8-12","notes":"Keep core tight"}]}],"nutrition":{"dailyCalories":0,"proteinGrams":0,"carbGrams":0,"fatGrams":0,"mealSuggestions":["Oats with berries"]},"notes":"Progress weekly."}
         """;
 
     public static string BuildUserMessage(ClientProfile profile, CalculatedMetrics metrics)

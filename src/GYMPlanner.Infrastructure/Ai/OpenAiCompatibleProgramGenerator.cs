@@ -36,16 +36,10 @@ internal sealed class OpenAiCompatibleProgramGenerator(HttpClient http, IOptions
                 new { role = "system", content = ProgramPrompt.System },
                 new { role = "user", content = ProgramPrompt.BuildUserMessage(profile, metrics) }
             },
-            response_format = new
-            {
-                type = "json_schema",
-                json_schema = new
-                {
-                    name = "weekly_program",
-                    strict = true,
-                    schema = ProgramPrompt.BuildSchemaElement()
-                }
-            }
+            // json_object is supported across providers (Gemini, Groq, OpenRouter, …);
+            // the exact shape is enforced by the prompt. (json_schema isn't supported
+            // by all Groq models.)
+            response_format = new { type = "json_object" }
         };
 
         using var request = new HttpRequestMessage(HttpMethod.Post, url)

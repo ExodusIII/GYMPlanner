@@ -35,14 +35,35 @@ public static class DependencyInjection
         string[] openAiCompatible = ["OpenAI", "Gemini", "Groq", "OpenRouter"];
 
         if (string.Equals(provider, "Ollama", StringComparison.OrdinalIgnoreCase))
+        {
             services.AddHttpClient<IProgramGenerator, OllamaProgramGenerator>(c => c.Timeout = TimeSpan.FromMinutes(10));
+        }
         else if (provider is not null && openAiCompatible.Contains(provider, StringComparer.OrdinalIgnoreCase))
+        {
             services.AddHttpClient<IProgramGenerator, OpenAiCompatibleProgramGenerator>(c => c.Timeout = TimeSpan.FromMinutes(5));
+            // Fill the right endpoint + model for the chosen provider unless explicitly set.
+            services.PostConfigure<OpenAiOptions>(o =>
+            {
+                var (baseUrl, model) = OpenAiDefaultsFor(provider);
+                if (string.IsNullOrWhiteSpace(o.BaseUrl)) o.BaseUrl = baseUrl;
+                if (string.IsNullOrWhiteSpace(o.Model)) o.Model = model;
+            });
+        }
         else
+        {
             services.AddScoped<IProgramGenerator, ClaudeProgramGenerator>();
+        }
 
         services.AddScoped<ProgramService>();
 
         return services;
     }
+
+    private static (string BaseUrl, string Model) OpenAiDefaultsFor(string provider) => provider.ToLowerInvariant() switch
+    {
+        "groq" => ("https://api.groq.com/openai/v1", "llama-3.3-70b-versatile"),
+        "openrouter" => ("https://openrouter.ai/api/v1", "meta-llama/llama-3.3-70b-instruct"),
+        "openai" => ("https://api.openai.com/v1", "gpt-4o-mini"),
+        _ => ("https://generativelanguage.googleapis.com/v1beta/openai", "gemini-2.0-flash") // Gemini
+    };
 }

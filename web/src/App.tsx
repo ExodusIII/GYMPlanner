@@ -93,7 +93,7 @@ export default function App() {
           <h2>Weekly program (AI)</h2>
           {email ? (
             <button onClick={generate} disabled={generating}>
-              {generating ? 'Generating with Claude…' : 'Generate weekly program'}
+              {generating ? 'Generating with Gemini…' : 'Generate weekly program'}
             </button>
           ) : (
             <p className="muted">Log in to generate and save an AI-written weekly program.</p>
