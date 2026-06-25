@@ -90,10 +90,10 @@ export default function App() {
 
       {metrics && (
         <div className="card generate">
-          <h2>Weekly program (AI)</h2>
+          <h2>Weekly program with meal plan(AI)</h2>
           {email ? (
             <button onClick={generate} disabled={generating}>
-              {generating ? 'Generating with Gemini…' : 'Generate weekly program'}
+              {generating ? 'Generating with Groq…' : 'Generate weekly program'}
             </button>
           ) : (
             <p className="muted">Log in to generate and save an AI-written weekly program.</p>
