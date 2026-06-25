@@ -27,38 +27,20 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__Default: "Host=db;Port=5432;Database=gymplanner;Username=postgres;Password=postgres"
-      # AI program generator: "Claude" (paid API) or "Ollama" (free, local).
+      # AI program generator. Default "Claude"; set PROGRAM_GENERATOR=Groq/Gemini/... in .env.
       ProgramGenerator__Provider: ${PROGRAM_GENERATOR:-Claude}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      # Defaults to Ollama running on the host. For the in-compose ollama
-      # service (--profile ollama) set OLLAMA_BASEURL=http://ollama:11434.
-      Ollama__BaseUrl: ${OLLAMA_BASEURL:-http://host.docker.internal:11434}
-      Ollama__Model: ${OLLAMA_MODEL:-llama3.2}
-      # OpenAI-compatible provider (Gemini, Groq, OpenRouter, …).
+      # OpenAI-compatible provider (Groq, Gemini, OpenRouter, …).
       # Key: use AI_API_KEY (any provider) or GEMINI_API_KEY (Gemini).
       OpenAi__ApiKey: ${AI_API_KEY:-${GEMINI_API_KEY:-}}
       # Empty => the app picks the right endpoint/model for the provider. Override to pin them.
       OpenAi__BaseUrl: ${OPENAI_BASEURL:-}
       OpenAi__Model: ${OPENAI_MODEL:-}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     ports:
       - "5030:8080"
     depends_on:
       db:
         condition: service_healthy
-
-  # Optional, free local LLM. Not started by default (the image is large).
-  # Enable with:  docker compose --profile ollama up -d
-  # Tip: running Ollama natively on the host is faster (GPU) — see README.
-  ollama:
-    image: ollama/ollama
-    profiles: ["ollama"]
-    volumes:
-      - ollamadata:/root/.ollama
-    ports:
-      - "11434:11434"
-    restart: unless-stopped
 
   web:
     build:
@@ -72,4 +54,3 @@ services:
 
 volumes:
   pgdata:
-  ollamadata:

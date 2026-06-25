@@ -140,58 +140,32 @@ Model defaults to `gemini-2.0-flash`.
 > (common in some countries) — enable billing on the project, or use Groq below.
 
 **Groq** (free tier that works in most regions; get a key at <https://console.groq.com>).
-The same generator powers it — just edit `.env`:
+Just edit `.env`:
 
 ```
 PROGRAM_GENERATOR=Groq
 AI_API_KEY=gsk_your_groq_key
-OPENAI_BASEURL=https://api.groq.com/openai/v1
-OPENAI_MODEL=llama-3.3-70b-versatile
 ```
 
-(`AI_API_KEY` is the provider-agnostic key slot; `GEMINI_API_KEY` also works.)
-**OpenRouter** works the same way — only the base URL, model, and key change.
+The app auto-selects the Groq endpoint and a default model
+(`llama-3.3-70b-versatile`) — set `OPENAI_MODEL` to override. `AI_API_KEY` is the
+provider-agnostic key slot. **OpenRouter** works the same way (its base URL is
+auto-selected too when `PROGRAM_GENERATOR=OpenRouter`).
 
-### Option C — Ollama (free, local, no API key)
+### Option C — Ollama (free, local; run the API locally)
 
-Install [Ollama for Windows](https://ollama.com) (GPU-accelerated) and pull a model.
-The backend then calls Ollama instead of Claude.
+The Docker stack does not bundle Ollama. To use it, install
+[Ollama for Windows](https://ollama.com), pull a model, and run the API locally:
 
 ```bash
-ollama pull llama3.2          # 3B, fast. For better quality: qwen2.5:7b / llama3.1:8b
-```
-
-> The provider is chosen by `ProgramGenerator:Provider`. **In Docker this must be an
-> environment variable** (`PROGRAM_GENERATOR`), not a user-secret — user-secrets are
-> only read by `dotnet run` on the host, never inside the container.
-
-**Docker stack + host Ollama** (the running API reaches host Ollama via
-`host.docker.internal`, configured in the compose file):
-
-```powershell
-$env:PROGRAM_GENERATOR = "Ollama"
-# $env:OLLAMA_MODEL = "qwen2.5:7b"   # optional, better quality than the 3B default
-docker compose up -d
-```
-
-**Local API (no Docker) + host Ollama:**
-
-```bash
+ollama pull llama3.2          # for better quality: qwen2.5:7b / llama3.1:8b
 dotnet user-secrets --project src/GYMPlanner.Api set "ProgramGenerator:Provider" "Ollama"
 dotnet run --project src/GYMPlanner.Api
 ```
 
-**Fully in Docker** (Ollama in a container too — opt-in, large image):
-
-```powershell
-$env:PROGRAM_GENERATOR = "Ollama"; $env:OLLAMA_BASEURL = "http://ollama:11434"
-docker compose --profile ollama up -d
-docker compose exec ollama ollama pull llama3.2   # one-time (~2 GB)
-```
-
-Defaults: `Ollama:Model` = `llama3.2`, and the Docker API's `Ollama:BaseUrl`
-defaults to `http://host.docker.internal:11434`. A small 3B model produces
-schema-valid but weak content — use a 7B+ model for usable programs.
+`Ollama:Model` defaults to `llama3.2` (`Ollama:BaseUrl` → `http://localhost:11434`).
+A small 3B model produces schema-valid but weak content — use a 7B+ model for
+usable programs.
 
 ## Run the frontend
 
