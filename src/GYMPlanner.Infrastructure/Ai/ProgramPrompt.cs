@@ -18,9 +18,14 @@ internal static class ProgramPrompt
         - The "days" array MUST contain EXACTLY the requested number of training days — no more, no fewer.
         - Each day: a short "focus" label (e.g. "Upper Body", "Lower Body", "Push", "Pull", "Legs",
           "Full Body") consistent with the requested split, and 4 to 6 exercises.
-        - Each exercise: a real exercise "name"; "sets" as an integer from 3 to 5; "reps" as a RANGE
-          string such as "8-12" or "10-15" (NEVER a single letter, a number alone, or empty); and a
-          short practical "notes" tip (max ~12 words, never empty).
+        - Each exercise: a real exercise "name"; "sets" as an integer (3 to 5 for lifts, 1 for a timed
+          cardio item); "reps" as a RANGE string such as "8-12"/"10-15" for lifts, or a DURATION like
+          "20 min" for cardio (NEVER a single letter, a number alone, or empty); and a short practical
+          "notes" tip (max ~12 words, never empty).
+        - Tailor the plan to the client's GOAL. For fat-loss or endurance goals you MUST INCLUDE
+          cardio/conditioning — 2 to 3 cardio or HIIT items across the week (e.g. {"name":"Incline Treadmill Walk","sets":1,"reps":"25 min","notes":"Steady moderate pace"}),
+          as dedicated items or end-of-session finishers, and keep rest periods short. For muscle or
+          strength goals, prioritize progressive overload and keep cardio light/optional.
         - The nutrition section MUST copy the provided calorie and macro numbers EXACTLY, and include
           4 to 6 concrete "mealSuggestions" (real meals, not placeholders).
         - "notes": one or two sentences of overall guidance.
@@ -45,6 +50,7 @@ internal static class ProgramPrompt
             Target ~{metrics.Training.WeeklySetsPerMuscleGroup} working sets per major muscle group per week.
             Session length: ~{profile.MinutesPerSession} minutes. Equipment: "{profile.Equipment}".
             Experience: "{profile.Experience}". Injuries to work around: {injuries}.
+            Goal: "{profile.Goal}" — {GoalGuidance(profile.Goal)}
 
             Nutrition — copy these numbers EXACTLY:
             dailyCalories={metrics.CalorieTarget}, proteinGrams={metrics.Macros.ProteinGrams},
@@ -54,6 +60,18 @@ internal static class ProgramPrompt
             {profileJson}
             """;
     }
+
+    /// <summary>Goal-specific coaching emphasis (cardio for fat-loss/endurance, overload for strength, …).</summary>
+    private static string GoalGuidance(Goal goal) => goal switch
+    {
+        Goal.LoseFat => "prioritize the calorie deficit and INCLUDE 2-3 cardio/HIIT sessions this week (or 8-12 min finishers on lifting days); keep rest short (45-75s).",
+        Goal.Endurance => "prioritize cardio/conditioning volume (running, cycling, intervals) with supporting strength work.",
+        Goal.Recomp => "strength focus PLUS 1-2 short cardio/conditioning sessions to support fat loss.",
+        Goal.BuildMuscle => "prioritize progressive overload and hypertrophy reps (8-12); rest 90-120s; keep cardio light and optional.",
+        Goal.Strength => "heavy compound lifts, lower reps (3-6), longer rest (2-3 min); minimal cardio.",
+        Goal.Maintain => "balanced strength work with 1-2 optional cardio sessions for general health.",
+        _ => "train appropriately for the client's goal."
+    };
 
     /// <summary>
     /// JSON Schema for <see cref="GYMPlanner.Application.Programs.WeeklyProgram"/>.
